@@ -1,5 +1,6 @@
 require "graphql"
-require "roda"
+require "hanami/api"
+require "hanami/middleware/body_parser"
 
 class QueryType < GraphQL::Schema::Object
   field :hello, String, null: false
@@ -14,21 +15,17 @@ class Schema < GraphQL::Schema
   query QueryType
 end
 
+class App < Hanami::API
+  post "/graphql" do
+    result = Schema.execute(params[:query], variables: params[:variables])
 
-class App < Roda
-  plugin :json_parser
-  plugin :json
+    json(result)
+  end
 
-  route do |r|
-    r.on 'graphql' do
-      r.post do
-        result = Schema.execute(
-          r.params["query"],
-          variables: r.params["variables"],
-        ).to_json
-      end
-    end
+  get "/" do
+    "Hello, world"
   end
 end
 
-run App
+use Hanami::Middleware::BodyParser, :json
+run App.new
